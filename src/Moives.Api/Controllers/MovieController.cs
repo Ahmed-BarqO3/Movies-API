@@ -25,6 +25,20 @@ public class MovieController : ControllerBase
             : BadRequest();
     }
 
+
+    [HttpPut(ApiEndpoints.Movies.Update)]
+    public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateMovieRequest request, CancellationToken token)
+    {
+        var movie = request.MapToMovie(id);
+        var result = await _movieService.UpdateAsync(movie, token);
+        if (result is null)
+        {
+            return NotFound();
+        }
+        return Ok(result.MapToMovieResponse());
+
+    }
+
     [HttpGet(ApiEndpoints.Movies.Get)]
     public async Task<IActionResult> Get([FromRoute] string idOrSlug, CancellationToken token)
     {
@@ -40,6 +54,8 @@ public class MovieController : ControllerBase
         var response = movie.MapToMovieResponse();
         return Ok(response);
     }
+
+
 
 
     [HttpGet(ApiEndpoints.Movies.GetAll)]

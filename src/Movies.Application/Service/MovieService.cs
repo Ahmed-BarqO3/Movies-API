@@ -39,12 +39,12 @@ public class MovieService : IMovieService
         return await _movieRepository.GetAllAsync(token);
     }
 
-    public async Task<Movie> GetByIdAsync(Guid id, CancellationToken token = default)
+    public async Task<Movie?> GetByIdAsync(Guid id, CancellationToken token = default)
     {
         return await _movieRepository.GetByIdAsync(id, token);
     }
 
-    public async Task<Movie> GetBySlugAsync(string slug, CancellationToken token = default)
+    public async Task<Movie?> GetBySlugAsync(string slug, CancellationToken token = default)
     {
         return await _movieRepository.GetBySlugAsync(slug, token);
     }
