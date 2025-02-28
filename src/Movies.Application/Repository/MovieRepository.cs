@@ -28,7 +28,7 @@ public class MovieRepository : IMovieRepository
             foreach (var genre in movie.Genres)
             {
                 await connection.ExecuteAsync(new CommandDefinition("""
-                    INSERT INTO genres (movieId, genre)
+                    INSERT INTO genres (movieId, name)
                     VALUES (@MovieId, @Name)
                 """, new { MovieId = movie.Id, Name = genre }, cancellationToken: token));
             }
@@ -41,26 +41,52 @@ public class MovieRepository : IMovieRepository
 
     }
 
-    public Task<bool> UpdateAsync(Movie movie, CancellationToken token = default)
+    public async Task<bool> UpdateAsync(Movie movie, CancellationToken token = default)
     {
+        using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
+        using var transaction = connection.BeginTransaction();
 
-        throw new NotImplementedException();
+        await connection.ExecuteAsync(new CommandDefinition("""
+                Delete from genres where movieId = @Id
+                """, new { Id = movie.Id }, cancellationToken: token));
+
+        foreach (var genre in movie.Genres)
+        {
+            await connection.ExecuteAsync(new CommandDefinition("""
+                INSERT INTO genres (movieId, name)
+                VALUES (@MovieId, @Name)
+            """, new { MovieId = movie.Id, Name = genre }, cancellationToken: token));
+        }
+
+        var result = await connection.ExecuteAsync(new CommandDefinition("""
+            UPDATE movies
+            SET title = @Title, slug = @Slug, yearOfRelease = @YearOfRelease
+            WHERE id = @Id
+        """, movie, cancellationToken: token));
+
+        transaction.Commit();
+
+        return result > 0;
     }
 
-    public Task<bool> DeleteByIdAsync(Guid id, CancellationToken token = default)
+    public async Task<bool> DeleteByIdAsync(Guid id, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
+        var result = await connection.ExecuteAsync(new CommandDefinition("""
+            DELETE FROM movies WHERE id = @Id
+        """, new { Id = id }, cancellationToken: token));
 
+        return result > 0;
     }
 
     public async Task<bool> ExistsByIdAsync(Guid id, CancellationToken token = default)
     {
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
-        var movie = await connection.QuerySingleOrDefaultAsync<Movie>(new CommandDefinition("""
-            SELECT * FROM movies WHERE id = @Id
-        """, new { Id = id }, cancellationToken: token));
+        var result = await connection.ExecuteScalarAsync<bool>(new CommandDefinition("""
+            SELECT  COUNT(*) From movies WHERE id = @id
+        """, new { id }, cancellationToken: token));
 
-        return movie is not null;
+        return result;
     }
 
     public async Task<Movie?> GetByIdAsync(Guid id, CancellationToken token = default)
@@ -75,7 +101,7 @@ public class MovieRepository : IMovieRepository
             return null;
 
         var genres = await connection.QueryAsync<string>(new CommandDefinition("""
-            SELECT genre FROM genres WHERE movieId = @id
+            SELECT name FROM genres WHERE movieId = @id
         """, new { id = movie.Id }, cancellationToken: token));
 
         foreach (var genre in genres)
@@ -99,7 +125,7 @@ public class MovieRepository : IMovieRepository
         }
 
         var genres = await connection.QueryAsync<string>(new CommandDefinition("""
-            SELECT genre FROM genres WHERE movieId = @id
+            SELECT name FROM genres WHERE movieId = @id
         """, new { id = movie.Id }, cancellationToken: token));
 
         foreach (var genre in genres)
@@ -115,7 +141,7 @@ public class MovieRepository : IMovieRepository
     {
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         var result = await connection.QueryAsync(new CommandDefinition("""
-                Select m.*, string_agg(g.genre, ',') as genres
+                Select m.*, string_agg(g.name, ',') as genres
                 from movies  m left join genres  g on m.id = g.movieId
                 group by id
                 """, cancellationToken: token));
@@ -124,8 +150,8 @@ public class MovieRepository : IMovieRepository
         {
             Id = r.id,
             Title = r.title,
-            YearOfRelease = r.yearOfRelease,
-            Genres = Enumerable.ToList(r.genre.Split(','))
+            YearOfRelease = r.yearofrelease,
+            Genres = Enumerable.ToList(r.genres.Split(','))
         });
     }
 }

@@ -11,16 +11,17 @@ public class DBInitializer
         _connectionFactory = connectionFactory;
     }
 
-    public async Task InitializeAsync()
+    public async Task InitializeAsync(CancellationToken token = default)
     {
-        using var connection = await _connectionFactory.CreateConnectionAsync();
+        using var connection = await _connectionFactory.CreateConnectionAsync(token);
+
 
         await connection.ExecuteAsync("""
             Create Table if not exists movies (
             id UUID primary key,
             title TEXT not null,
             slug TEXT not null,
-            yearOfRelease integer not null);
+            yearofrelease integer not null);
             """);
 
         await connection.ExecuteAsync("""
@@ -32,7 +33,7 @@ public class DBInitializer
         await connection.ExecuteAsync("""
             create table if not exists genres(
             movieId UUID references movies(id),
-            genre TEXT not null);
+            name TEXT not null);
             """);
     }
 }

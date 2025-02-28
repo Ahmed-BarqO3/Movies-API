@@ -17,23 +17,36 @@ public static class ContractMapping
         };
     }
 
+    public static Movie MapToMovie(this UpdateMovieRequest request, Guid id)
+    {
+        return new Movie
+        {
+            Id = id,
+            Title = request.Title,
+            YearOfRelease = request.YearOfRelease,
+            Genres = request.Genres.ToList()
+        };
+    }
+
     public static MovieResponse MapToMovieResponse(this Movie movie)
     {
         return new MovieResponse
         {
             Id = movie.Id,
-            Slug = movie.Slug,
             Title = movie.Title,
+            Slug = movie.Slug,
             YearOfRelease = movie.YearOfRelease,
             Genres = movie.Genres
         };
+
     }
+
 
     public static MoviesResponse MapToMoviesResponse(this IEnumerable<Movie> movies)
     {
         return new MoviesResponse
         {
-            Items = movies.Select(x => x.MapToMovieResponse()).ToList()
+            Items = movies.Select(MapToMovieResponse)
         };
     }
 
