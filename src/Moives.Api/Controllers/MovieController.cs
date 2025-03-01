@@ -1,5 +1,7 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Moives.Api.Mapping;
+using Movies.Application.Models;
 using Movies.Application.Service;
 using Movies.Contracts.Requsets;
 
@@ -13,6 +15,7 @@ public class MovieController : ControllerBase
     public MovieController(IMovieService movieService)
     {
         _movieService = movieService;
+
     }
 
 
@@ -35,8 +38,17 @@ public class MovieController : ControllerBase
         {
             return NotFound();
         }
-        return Ok(result.MapToMovieResponse());
+        var response = movie.MapToMovieResponse();
+        return Ok(response);
 
+    }
+    
+    [HttpDelete(ApiEndpoints.Movies.Delete)]
+    public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken token)
+    {
+        return await _movieService.DeleteByIdAsync(id, token)
+            ? Ok()
+            : NotFound();
     }
 
     [HttpGet(ApiEndpoints.Movies.Get)]

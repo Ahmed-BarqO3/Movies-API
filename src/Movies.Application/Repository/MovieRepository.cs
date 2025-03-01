@@ -72,10 +72,21 @@ public class MovieRepository : IMovieRepository
     public async Task<bool> DeleteByIdAsync(Guid id, CancellationToken token = default)
     {
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
-        var result = await connection.ExecuteAsync(new CommandDefinition("""
-            DELETE FROM movies WHERE id = @Id
-        """, new { Id = id }, cancellationToken: token));
-
+        using var transaction = connection.BeginTransaction();
+        
+        var result = await connection.ExecuteAsync(new CommandDefinition(
+            """
+                         DELETE FROM genres WHERE movieId = @Id
+                        """, new { Id = id }, cancellationToken: token));;
+        
+        if(result > 0)
+        {
+            await connection.ExecuteAsync(new CommandDefinition("""
+                  DELETE FROM movies WHERE id = @Id
+                  """, new { Id = id }, cancellationToken: token));
+        }
+        
+        transaction.Commit();
         return result > 0;
     }
 
