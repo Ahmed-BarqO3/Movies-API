@@ -1,3 +1,7 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Moives.Api.Mapping;
 using Movies.Application;
 using Movies.Application.Database;
@@ -8,9 +12,32 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+var config = builder.Configuration;
+
 builder.Services.AddOpenApi();
-builder.Services.AddDatabase(builder.Configuration["DB:ConnectionString"]);
+builder.Services.AddDatabase(config["DB:ConnectionString"]!);
 builder.Services.AddApplication();
+
+builder.Services.AddAuthentication(x =>
+    {
+        x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateAudience = true,
+            ValidateIssuer = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = config["Jwt:Issuer"],
+            ValidAudience = config["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!))
+
+        };
+    });
 
 var app = builder.Build();
 
@@ -22,6 +49,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseMiddleware<ValidationMappingMiddleware>();
+    
+app.UseAuthorization();
 app.UseAuthorization();
 app.MapControllers();
 
