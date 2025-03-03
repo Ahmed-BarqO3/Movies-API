@@ -100,7 +100,7 @@ public class MovieRepository : IMovieRepository
         return result;
     }
 
-    public async Task<Movie?> GetByIdAsync(Guid id, CancellationToken token = default)
+    public async Task<Movie?> GetByIdAsync(Guid id,Guid? Userid = default, CancellationToken token = default)
     {
 
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
