@@ -53,7 +53,7 @@ public class IdentityController: ControllerBase
             Subject = new ClaimsIdentity(claims),
             Issuer = config["Jwt:Issuer"],
             Audience = config["Jwt:Audience"],
-            Expires = DateTime.Now.AddSeconds(30),
+            Expires = DateTime.Now.AddHours(1),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!)),
                 SecurityAlgorithms.HmacSha256Signature)
         };
