@@ -1,12 +1,15 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Moives.Api.Mapping;
+using Movies.Api.Auth;
 using Movies.Application.Models;
 using Movies.Application.Service;
 using Movies.Contracts.Requsets;
 
 namespace Movies.Api.Controllers;
 
+[Authorize]
 [ApiController]
 public class MovieController : ControllerBase
 {
@@ -15,7 +18,6 @@ public class MovieController : ControllerBase
     public MovieController(IMovieService movieService)
     {
         _movieService = movieService;
-
     }
 
 
@@ -33,7 +35,8 @@ public class MovieController : ControllerBase
     public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateMovieRequest request, CancellationToken token)
     {
         var movie = request.MapToMovie(id);
-        var result = await _movieService.UpdateAsync(movie, token);
+        var userid = HttpContext.GetUserId();
+        var result = await _movieService.UpdateAsync(movie,userid,token);
         if (result is null)
         {
             return NotFound();
@@ -51,12 +54,14 @@ public class MovieController : ControllerBase
             : NotFound();
     }
 
+    [AllowAnonymous]
     [HttpGet(ApiEndpoints.Movies.Get)]
     public async Task<IActionResult> Get([FromRoute] string idOrSlug, CancellationToken token)
     {
+        var userId = HttpContext.GetUserId();
         var movie = Guid.TryParse(idOrSlug, out var id)
-            ? await _movieService.GetByIdAsync(id, token)
-            : await _movieService.GetBySlugAsync(idOrSlug, token);
+            ? await _movieService.GetByIdAsync(id,userId, token)
+            : await _movieService.GetBySlugAsync(idOrSlug,userId, token);
 
         if (movie is null)
         {
@@ -69,11 +74,12 @@ public class MovieController : ControllerBase
 
 
 
-
+    [AllowAnonymous]
     [HttpGet(ApiEndpoints.Movies.GetAll)]
     public async Task<IActionResult> GetAll(CancellationToken token)
-    {
-        var movies = await _movieService.GetAllAsync(token);
+    {        
+        var userid = HttpContext.GetUserId();
+        var movies = await _movieService.GetAllAsync(userid,token);
         var response = movies.MapToMoviesResponse();
 
         return Ok(response);

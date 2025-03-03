@@ -134,12 +134,11 @@ public class MovieRepository : IMovieRepository
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         var movie = await connection.QuerySingleOrDefaultAsync<Movie>(new CommandDefinition("""
             SELECT m.*, round(avg(r.rating),1) as rating, myr.rating as userrating
-            FROM movies 
-            
+            from movies m
             left join ratings r on m.id = r.movieid
             left join ratings myr on m.id = myr.movieid
             and myr.userid = @Userid
-            WHERE slug = @Slug
+            where slug = @Slug
             group by id,userrating
         """, new { Slug = slug, Userid }, cancellationToken: token));
 
@@ -168,21 +167,21 @@ public class MovieRepository : IMovieRepository
                 Select m.*,
                     string_agg( distinct g.name, ',') as genres,
                     round(avg(r.rating),1) as rating, myr.rating as userrating
-                    from movies  m
+                    from movies m
                     left join genres g on m.id = g.movieId
                     left join ratings r on m.id = r.movieid
                     left join ratings myr on m.id = myr.movieid
                     and myr.userid = @Userid
                     group by id,userrating
-                """, cancellationToken: token));
+                """,new {Userid}, cancellationToken: token));
 
         return result.Select(r => new Movie
         {
             Id = r.id,
             Title = r.title,
             YearOfRelease = r.yearofrelease,
-            Rating = r.rating,
-            UserRating = r.userrating,
+            Rating = (float?)r.rating,
+            UserRating = (int?)r.userrating,
             Genres = Enumerable.ToList(r.genres.Split(','))
         });
     }
