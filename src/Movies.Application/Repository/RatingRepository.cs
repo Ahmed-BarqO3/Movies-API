@@ -1,5 +1,7 @@
 using Dapper;
 using Movies.Application.Database;
+using Movies.Application.Models;
+using Movies.Contracts.Responses;
 
 namespace Movies.Application.Repository;
 
@@ -19,13 +21,13 @@ public class RatingRepository : IRatingRepository
             SELECT round(AVG(rating),1)
             FROM ratings
             WHERE movieId = @movieId
-        """, new {  movieId }, cancellationToken: token));
+        """, new { movieId }, cancellationToken: token));
     }
 
     public async Task<(float? Rating, int? UserRating)> GetRatingAsync(Guid movieId, Guid userId, CancellationToken token = default)
     {
         var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
-                            return await connection.QueryFirstOrDefaultAsync<(float?,int?)>(new CommandDefinition("""
+        return await connection.QueryFirstOrDefaultAsync<(float?, int?)>(new CommandDefinition("""
                             SELECT round(AVG(rating),1),
                                 (select rating
                                 from ratings
@@ -34,7 +36,7 @@ public class RatingRepository : IRatingRepository
                                 limit 1)
                             from ratings
                             where movieId = @movieId
-                        """, new {  movieId,userId }, cancellationToken: token));
+                        """, new { movieId, userId }, cancellationToken: token));
     }
 
     public async Task<bool> RateMovieAsync(Guid movieId, Guid userId, int rating, CancellationToken token = default)
@@ -54,5 +56,16 @@ public class RatingRepository : IRatingRepository
             DELETE FROM ratings
             WHERE movieid = @movieId AND userid = @userId
         """, new { movieId, userId }, cancellationToken: token)) > 0;
+    }
+
+    public async Task<IEnumerable<MovieRating>> GetUserRatingsAsync(Guid userId, CancellationToken token = default)
+    {
+        var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
+        return await connection.QueryAsync<MovieRating>(new CommandDefinition("""
+                    select r.rating, r.movieid, m.slug
+                    from ratings r
+                    inner join movies m on r.movieid = m.id
+                    where userid = @userId
+                    """, new { userId }, cancellationToken: token));
     }
 }

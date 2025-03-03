@@ -43,13 +43,22 @@ public static class ContractMapping
 
     }
 
-
     public static MoviesResponse MapToMoviesResponse(this IEnumerable<Movie> movies)
     {
         return new MoviesResponse
         {
             Items = movies.Select(MapToMovieResponse)
         };
+    }
+
+    public static IEnumerable<MovieRatingResponse> MapToResponse(this IEnumerable<MovieRating> ratings)
+    {
+        return ratings.Select(x => new MovieRatingResponse
+        {
+            Rating = x.Rating,
+            Slug = x.Slug,
+            MovieId = x.MovieId
+        });
     }
 
 }
