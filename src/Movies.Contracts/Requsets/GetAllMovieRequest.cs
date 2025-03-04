@@ -1,6 +1,6 @@
 namespace Movies.Contracts.Requsets;
 
-public class GetAllMovieRequest
+public class GetAllMovieRequest : PagedRequset
 {
     public required string? Title { get; init; }
     public required int? YearOfRelease { get; init; }
