@@ -41,14 +41,14 @@ public class MovieRepository : IMovieRepository
 
     }
 
-    public async Task<bool> UpdateAsync(Movie movie = default, CancellationToken token = default)
+    public async Task<bool> UpdateAsync(Movie movie , CancellationToken token = default)
     {
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         using var transaction = connection.BeginTransaction();
 
         await connection.ExecuteAsync(new CommandDefinition("""
                 Delete from genres where movieId = @Id
-                """, new { Id = movie.Id }, cancellationToken: token));
+                """, new { movie.Id }, cancellationToken: token));
 
         foreach (var genre in movie.Genres)
         {
@@ -163,7 +163,16 @@ public class MovieRepository : IMovieRepository
     public async Task<IEnumerable<Movie>> GetAllAsync(GetAllMoviesOptions options,CancellationToken token = default)
     {
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
-        var result = await connection.QueryAsync(new CommandDefinition("""
+        
+        var OrderClause = string.Empty;
+        if (options.SortField is not null)
+        {
+            OrderClause = $"""
+            , m.{options.SortField} 
+                ORDER BY m.{options.SortField} {(options.SortOrder == SortOrder.Descending ? "DESC" : "ASC")}
+            """;
+        }
+        var result = await connection.QueryAsync(new CommandDefinition($"""
                 Select m.*,
                     string_agg( distinct g.name, ',') as genres,
                     round(avg(r.rating),1) as rating, myr.rating as userrating
@@ -176,7 +185,7 @@ public class MovieRepository : IMovieRepository
                     where (@title is null or m.title like ('%' || @title || '%'))
                     and (@year is null or m.yearOfRelease = @year)
                 
-                    group by id,userrating
+                    group by id,userrating {OrderClause}
                 """,new
         {
             Userid = options.UserId,
