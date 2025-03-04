@@ -14,5 +14,12 @@ public class GetAllMoviesOptionsValidator : AbstractValidator<GetAllMoviesOption
         RuleFor(x => x.SortField)
             .Must(x => x is null || _allowedSortBy.Contains(x, StringComparer.OrdinalIgnoreCase))
             .WithMessage("Invalid sort field. Allowed values are: title, yearofrelease");
+
+        RuleFor(x => x.Page)
+            .GreaterThanOrEqualTo(1);
+
+        RuleFor(x => x.PageSize)
+            .InclusiveBetween(1, 25)
+            .WithMessage("You can get between 1 and 25 movies at once");
     }
 }
