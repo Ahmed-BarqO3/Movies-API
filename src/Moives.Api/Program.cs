@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.IdentityModel.Tokens;
 using Moives.Api.Mapping;
 using Movies.Application;
@@ -34,12 +35,20 @@ builder.Services.AddAuthentication(x =>
             ValidIssuer = config["Jwt:Issuer"],
             ValidAudience = config["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!)),
-            
+
             ClockSkew = TimeSpan.Zero
         };
     });
 
-
+builder.Services.AddOutputCache(x =>
+{
+    x.AddBasePolicy(c => c.Cache());
+    x.AddPolicy("MovieCache", c =>
+        c.Cache()
+            .Expire(TimeSpan.FromMinutes(1))
+            .SetVaryByQuery(["title", "year", "pageSize", "page", "sortBy"])
+            .Tag("movies"));
+});
 
 var app = builder.Build();
 
@@ -50,10 +59,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+
+app.UseOutputCache();
+
 app.UseMiddleware<ValidationMappingMiddleware>();
-    
+
 app.UseAuthorization();
 app.UseAuthorization();
+
+
+
 app.MapControllers();
 
 var dbInitializer = app.Services.GetRequiredService<DBInitializer>();
