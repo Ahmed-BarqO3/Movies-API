@@ -10,7 +10,7 @@ using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegiste
 namespace Movies.Api.Controllers;
 
 [ApiController]
-public class IdentityController: ControllerBase
+public class IdentityController : ControllerBase
 {
     private IConfiguration config;
 
@@ -20,12 +20,12 @@ public class IdentityController: ControllerBase
     }
 
 
-    [HttpPost("token")] 
-    public  async Task<IActionResult> GenerateToken([FromBody] TokenGenerationRequest request)
+    [HttpPost("token")]
+    public Task<IActionResult> GenerateToken([FromBody] TokenGenerationRequest request)
     {
         var token = new JsonWebTokenHandler();
         var key = config["Jwt:Key"];
-        
+
         var claims = new List<Claim>
         {
             new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
@@ -44,10 +44,10 @@ public class IdentityController: ControllerBase
                 JsonValueKind.False => ClaimValueTypes.Boolean,
                 _ => ClaimValueTypes.String
             };
-            
+
             claims.Add(new Claim(claim.Key, claim.Value.ToString()!, value));
         }
-        
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
@@ -57,7 +57,7 @@ public class IdentityController: ControllerBase
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!)),
                 SecurityAlgorithms.HmacSha256Signature)
         };
-        
+
         return Ok(token.CreateToken(tokenDescriptor));
     }
 }
