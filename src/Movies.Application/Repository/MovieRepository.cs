@@ -118,7 +118,7 @@ public class MovieRepository : IMovieRepository
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         var movie = await connection.QuerySingleOrDefaultAsync<Movie>(new CommandDefinition("""
             SELECT m.*, round(avg(r.rating),1) as rating, myr.rating as userrating
-                from movies
+                from movies m
                 left join ratings r on m.id = r.movieid
                 left join ratings myr on m.id = myr.movieid
                 and myr.userid = @Userid
