@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.IdentityModel.Tokens;
 using Moives.Api.Mapping;
+using Movies.Api.Health;
 using Movies.Application;
 using Movies.Application.Database;
 
@@ -50,6 +51,10 @@ builder.Services.AddOutputCache(x =>
             .Tag("movies"));
 });
 
+
+builder.Services.AddHealthChecks()
+.AddCheck<DatabaseHealthCheck>(DatabaseHealthCheck.Name);
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -57,10 +62,12 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.MapHealthChecks("_health");
 app.UseHttpsRedirection();
 
 
 app.UseOutputCache();
+
 
 app.UseMiddleware<ValidationMappingMiddleware>();
 
