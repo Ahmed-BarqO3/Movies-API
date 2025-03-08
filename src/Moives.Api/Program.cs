@@ -82,3 +82,5 @@ var dbInitializer = app.Services.GetRequiredService<DBInitializer>();
 await dbInitializer.InitializeAsync();
 
 app.Run();
+
+public partial class  Program {} 
