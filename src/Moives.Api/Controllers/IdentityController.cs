@@ -21,7 +21,7 @@ public class IdentityController : ControllerBase
 
 
     [HttpPost("token")]
-    public Task<IActionResult> GenerateToken([FromBody] TokenGenerationRequest request)
+    public IActionResult GenerateToken([FromBody] TokenGenerationRequest request)
     {
         var token = new JsonWebTokenHandler();
         var key = config["Jwt:Key"];
@@ -58,6 +58,8 @@ public class IdentityController : ControllerBase
                 SecurityAlgorithms.HmacSha256Signature)
         };
 
-        return Ok(token.CreateToken(tokenDescriptor));
+        var jwt = token.CreateToken(tokenDescriptor);
+
+        return Ok(jwt);
     }
 }
