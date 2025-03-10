@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.IdentityModel.Tokens;
+using Moives.Api.Auth;
 using Moives.Api.Mapping;
 using Movies.Api.Health;
 using Movies.Application;
@@ -41,6 +42,20 @@ builder.Services.AddAuthentication(x =>
         };
     });
 
+
+builder.Services.AddAuthorization(x =>
+{
+    x.AddPolicy(AuthConstants.AdminUserPolicyName, p =>
+        p.RequireClaim(AuthConstants.AdminUserClaimName));
+
+    x.AddPolicy(AuthConstants.TrustedMemberPolicyName, p =>
+    {
+        p.RequireAssertion(c =>
+            c.User.HasClaim(m => m is { Type: AuthConstants.AdminUserClaimName, Value: "true" }) ||
+            c.User.HasClaim(m => m is { Type: AuthConstants.TrustedMemberClaimName, Value: "true" }));
+    });
+});
+
 builder.Services.AddOutputCache(x =>
 {
     x.AddBasePolicy(c => c.Cache());
@@ -69,12 +84,14 @@ app.UseHttpsRedirection();
 app.UseOutputCache();
 
 
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+
+
+
 app.UseMiddleware<ValidationMappingMiddleware>();
-
-app.UseAuthorization();
-app.UseAuthorization();
-
-
 
 app.MapControllers();
 
@@ -83,4 +100,4 @@ await dbInitializer.InitializeAsync();
 
 app.Run();
 
-public partial class  Program {} 
+public partial class Program { }
