@@ -41,7 +41,7 @@ public class MovieRepository : IMovieRepository
 
     }
 
-    public async Task<bool> UpdateAsync(Movie movie , CancellationToken token = default)
+    public async Task<bool> UpdateAsync(Movie movie, CancellationToken token = default)
     {
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         using var transaction = connection.BeginTransaction();
@@ -69,23 +69,28 @@ public class MovieRepository : IMovieRepository
         return result > 0;
     }
 
-    public async Task<bool> DeleteByIdAsync(Guid id, CancellationToken token = default)
+    public async Task<bool> DeleteByIdAsync(Guid Id, Guid userid, CancellationToken token = default)
     {
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         using var transaction = connection.BeginTransaction();
-        
+
         var result = await connection.ExecuteAsync(new CommandDefinition(
             """
                          DELETE FROM genres WHERE movieId = @Id
-                        """, new { Id = id }, cancellationToken: token));
-        
-        if(result > 0)
+                        """, new { Id }, cancellationToken: token));
+
+        if (result > 0)
         {
+
+            await connection.ExecuteAsync(new CommandDefinition("""
+                DELETE FROM ratings WHERE movieId = @Id and userid = @userid
+                """, new { Id, userid }, cancellationToken: token));
+
             await connection.ExecuteAsync(new CommandDefinition("""
                   DELETE FROM movies WHERE id = @Id
-                  """, new { Id = id }, cancellationToken: token));
+                  """, new { Id }, cancellationToken: token));
         }
-        
+
         transaction.Commit();
         return result > 0;
     }
@@ -108,11 +113,11 @@ public class MovieRepository : IMovieRepository
             WHERE (@title is null or title like ('%' || @title || '%'))
             AND (@yearofrelease is null or yearOfRelease = @yearofrelease)
         """, new { title, yearofrelease }, cancellationToken: token));
-        
+
         return result;
     }
 
-    public async Task<Movie?> GetByIdAsync(Guid id,Guid? Userid = default, CancellationToken token = default)
+    public async Task<Movie?> GetByIdAsync(Guid id, Guid? Userid = default, CancellationToken token = default)
     {
 
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
@@ -141,7 +146,7 @@ public class MovieRepository : IMovieRepository
         return movie;
     }
 
-    public async Task<Movie?> GetBySlugAsync(string slug,Guid? Userid = default, CancellationToken token = default)
+    public async Task<Movie?> GetBySlugAsync(string slug, Guid? Userid = default, CancellationToken token = default)
     {
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         var movie = await connection.QuerySingleOrDefaultAsync<Movie>(new CommandDefinition("""
@@ -172,10 +177,10 @@ public class MovieRepository : IMovieRepository
 
     }
 
-    public async Task<IEnumerable<Movie>> GetAllAsync(GetAllMoviesOptions options,CancellationToken token = default)
+    public async Task<IEnumerable<Movie>> GetAllAsync(GetAllMoviesOptions options, CancellationToken token = default)
     {
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
-        
+
         var OrderClause = string.Empty;
         if (options.SortField is not null)
         {
@@ -200,7 +205,7 @@ public class MovieRepository : IMovieRepository
                     group by id,userrating {OrderClause}
                     limit @pageSize
                     offset @pageOffset
-                """,new
+                """, new
         {
             Userid = options.UserId,
             year = options.YearOfRelease,

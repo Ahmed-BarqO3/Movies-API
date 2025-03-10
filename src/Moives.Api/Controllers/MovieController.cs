@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using Moives.Api.Auth;
 using Moives.Api.Mapping;
 using Movies.Api.Auth;
 using Movies.Application.Service;
 using Movies.Contracts.Requsets;
-using Movies.Contracts.Responses;
+
 
 namespace Movies.Api.Controllers;
 
@@ -20,20 +21,21 @@ public class MovieController : ControllerBase
         _outputCache = outputCache;
     }
 
-
+    [Authorize(Policy = AuthConstants.AdminUserPolicyName)]
     [HttpPost(ApiEndpoints.Movies.Create)]
     public async Task<IActionResult> Create([FromBody] CreateMovieRequest request, CancellationToken token)
     {
         var movie = request.MapToMovie();
         await _movieService.CreateAsync(movie, token);
-        
+
         var response = movie.MapToMovieResponse();
-         await _outputCache.EvictByTagAsync("movies", token);
+        await _outputCache.EvictByTagAsync("movies", token);
 
         return CreatedAtAction(nameof(Get), new { idOrSlug = movie.Id }, response);
     }
 
 
+    [Authorize(Policy = AuthConstants.TrustedMemberPolicyName)]
     [HttpPut(ApiEndpoints.Movies.Update)]
     public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateMovieRequest request, CancellationToken token)
     {
@@ -50,10 +52,12 @@ public class MovieController : ControllerBase
         return Ok(response);
     }
 
+    [Authorize(Policy = AuthConstants.AdminUserPolicyName)]
     [HttpDelete(ApiEndpoints.Movies.Delete)]
     public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken token)
     {
-        var result = await _movieService.DeleteByIdAsync(id, token);
+        var userid = HttpContext.GetUserId();
+        var result = await _movieService.DeleteByIdAsync(id, userid!.Value, token);
         if (!result)
         {
             return NotFound();
@@ -79,7 +83,7 @@ public class MovieController : ControllerBase
         var response = movie.MapToMovieResponse();
         return Ok(response);
     }
-    
+
     [OutputCache(PolicyName = "MovieCache")]
     [HttpGet(ApiEndpoints.Movies.GetAll)]
     public async Task<IActionResult> GetAll([FromQuery] GetAllMovieRequest request, CancellationToken token)

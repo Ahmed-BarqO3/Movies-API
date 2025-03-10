@@ -72,12 +72,12 @@ public static class ContractMapping
             YearOfRelease = request.YearOfRelease,
             Page = request.Page,
             PageSize = request.PageSize,
-            SortField = request.SortBy?.Trim('+','-'),
+            SortField = request.SortBy?.Trim('+', '-'),
             SortOrder = request.SortBy is null ? SortOrder.Unsorted :
                 request.SortBy.StartsWith('-') ? SortOrder.Descending : SortOrder.Ascending
         };
     }
-    
+
     public static GetAllMoviesOptions WithUser(this GetAllMoviesOptions options, Guid? userId)
     {
         options.UserId = userId;
