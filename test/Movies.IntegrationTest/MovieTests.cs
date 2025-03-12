@@ -13,8 +13,6 @@ public class MovieTests : BaseIntegrationTest
     
     private async Task<MovieResponse?> CreateMovieViaApi()
     {
-        
-        
         var request = _movieRequestFaker.Generate();
         var response = await _client.PostAsJsonAsync(ApiEndpoints.Movies.Create, request);
         response.EnsureSuccessStatusCode();
@@ -38,10 +36,10 @@ public class MovieTests : BaseIntegrationTest
             
             }
         });
-        
+
         var token = await responseMessage.Content.ReadAsStringAsync();
         _client.DefaultRequestHeaders.Authorization = 
-            new AuthenticationHeaderValue("Bearer", token);
+            new AuthenticationHeaderValue("Bearer", token.Trim());
         
         
         // Act

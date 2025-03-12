@@ -15,7 +15,7 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program> , IAs
         .WithImage("postgres:latest")
         .WithDatabase("movies")
         .WithUsername("postgres")
-        .WithPassword("ahmed2003.")
+        .WithPassword("postgres")
         .Build();
     
     protected override void ConfigureWebHost(IWebHostBuilder builder)
